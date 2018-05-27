@@ -17,6 +17,22 @@ def category(request):
         print(e)
         return JsonResponse({"code": 1, "data":{ "code":1,"message":str(e)}})
 
+def salon(request):
+    try:
+        salons = Salon.objects.all().values()
+        for sal in salons:
+            urls = list(Photo.objects.filter(salon=sal["id"]).values())
+            sal["urls"] = urls
+            urls_array = []
+            for url in urls:
+                urls_array.append(url["url"])
+            sal["urls_array"] = urls_array
+        data = list(salons)
+        return JsonResponse({"code": 0, "data": data})
+    except Exception as e:
+        print(e)
+        return JsonResponse({"code": 1, "data":{ "code":1,"message":str(e)}})
+
 def sign_up(request):
     try:
         body_unicode = request.body.decode('utf-8')
@@ -62,11 +78,3 @@ def create_user(phone, password):
     else:
         return (None, "Такой пользователь уже существует")
 
-
-
-
-
-
-def get_user(phone, password):
-    if (Credentials.objects.get(phone=phone,password=password) is None):
-        pass

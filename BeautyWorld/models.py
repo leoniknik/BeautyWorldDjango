@@ -81,6 +81,7 @@ class Client(models.Model):
 
 
 class Salon(models.Model):
+    name = models.CharField(verbose_name='name', max_length=255, default="")
     credentials = models.ForeignKey(Credentials, null=False)
     address = models.CharField(verbose_name='address', max_length=255, default="")
     telephone = models.CharField(verbose_name='telephone', max_length=255, default="")
@@ -90,8 +91,8 @@ class Salon(models.Model):
     schedule = models.CharField(verbose_name='schedule', max_length=1000, default="")
     longitude = models.FloatField(verbose_name='longitude', default=0)
     latitude = models.FloatField(verbose_name='latitude', default=0)
-    place_flag = models.BooleanField(verbose_name='place_flag', default=False)
-    company_flag = models.BooleanField(verbose_name='company_flag', default=False)
+    place_flag = models.IntegerField(verbose_name='place_flag', default=0)
+    company_flag = models.IntegerField(verbose_name='company_flag', default=0)
 
 class Photo(models.Model):
     salon = models.ForeignKey(Salon, null=False)
