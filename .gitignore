@@ -102,3 +102,11 @@ ENV/
 BeautyWorldDjango.iml
 misc.xml
 vcs.xml
+*.xml
+0001_initial.py
+0002_tm.py
+*.len
+*.pyc
+metadata
+metadata.keystream
+metadata_i
