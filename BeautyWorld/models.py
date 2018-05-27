@@ -80,9 +80,22 @@ class Client(models.Model):
     details = models.ForeignKey(PersonalDetails, null=True)
 
 
+class Salon(models.Model):
+    credentials = models.ForeignKey(Credentials, null=False)
+    address = models.CharField(verbose_name='address', max_length=255, default="")
+    telephone = models.CharField(verbose_name='telephone', max_length=255, default="")
+    url = models.CharField(verbose_name='url', max_length=255, default="")
+    vk_url = models.CharField(verbose_name='vk_url', max_length=255, default="")
+    description = models.CharField(verbose_name='description', max_length=1000, default="")
+    schedule = models.CharField(verbose_name='schedule', max_length=1000, default="")
+    longitude = models.FloatField(verbose_name='longitude', default=0)
+    latitude = models.FloatField(verbose_name='latitude', default=0)
+    place_flag = models.BooleanField(verbose_name='place_flag', default=False)
+    company_flag = models.BooleanField(verbose_name='company_flag', default=False)
 
-
-
+class Photo(models.Model):
+    salon = models.ForeignKey(Salon, null=False)
+    url = models.CharField(verbose_name='url', max_length=255, default="")
 
 class Category(models.Model):
     name = models.CharField(verbose_name='name', max_length=255, default="")
