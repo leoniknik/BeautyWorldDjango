@@ -24,9 +24,25 @@ def sign_up(request):
 
         res = create_user(body["phone"],body["password"],body["repeat_password"])
         if res[0] is None:
-            return 
-        data = list(categories)
-        return JsonResponse({"code": 0, "data": data})
+            return JsonResponse({"code": 1, "message":res[1]})
+        else:
+            return JsonResponse({"code": 0, "data": res[0]})
+    except Exception as e:
+        print(e)
+        return JsonResponse({"code": 1, "message":str(e)})
+
+
+def sign_in(request):
+    try:
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+        if not Credentials.objects.filter(phone=body["phone"], password=body["password"]).exists():
+            return JsonResponse({"code": 1, "message": "Такого пользователя нет"})
+        else:
+            cred = Credentials.objects.filter(phone=body["phone"], password=body["password"]).first()
+            client = Client.objects.filter(credentials=cred).values().first()
+            client["credentials"] = Credentials.objects.filter(phone=body["phone"], password=body["password"]).values().first()
+            return JsonResponse({"code": 0, "data": client})
     except Exception as e:
         print(e)
         return JsonResponse({"code": 1, "message":str(e)})
@@ -35,7 +51,7 @@ def sign_up(request):
 def create_user(phone, password, rep_password):
     if(password != rep_password):
         return (None,"Пароли не совпадают")
-    if Credentials.objects.get(phone=phone,password=password) is None:
+    if not Credentials.objects.filter(phone=phone,password=password).exists():
         cred = Credentials()
         cred.phone = phone
         cred.password = password
@@ -43,7 +59,8 @@ def create_user(phone, password, rep_password):
 
         client = Client(credentials=cred)
         client.save()
-        return (client,"")
+        client_id = client.id
+        return (Client.objects.get(id=client_id),"")
     else:
         return (None, "Такой пользователь уже существует")
 
