@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth.base_user import AbstractBaseUser
 import datetime
+import django.utils as ut
 
 
 #class UserManager(BaseUserManager):
@@ -74,7 +75,7 @@ class Credentials(models.Model):
 class PersonalDetails(models.Model):
     name = models.CharField(verbose_name='name', max_length=255, default="")
     surname = models.CharField(verbose_name='surname', max_length=255, default="")
-    date = models.DateField(verbose_name='date')
+    birth_date = models.DateTimeField(verbose_name='birth_date', default=ut.timezone.now)
     phone = models.CharField(verbose_name='phone', max_length=255, default="")
     vk_id = models.CharField(verbose_name='image_url', max_length=1000, default="", null=True)
 
