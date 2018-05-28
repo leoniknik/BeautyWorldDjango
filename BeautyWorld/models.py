@@ -62,11 +62,14 @@ import datetime
 #        return self.is_superuser
 #
 #
+
+
 class Credentials(models.Model):
     email = models.CharField(verbose_name='email', max_length=255, default="", null=True)
     password = models.CharField(verbose_name='password', max_length=255, default="")
     phone = models.CharField(verbose_name='phone', max_length=255, default="")
     vk_id = models.CharField(verbose_name='image_url', max_length=1000, default="", null=True)
+
 
 class PersonalDetails(models.Model):
     name = models.CharField(verbose_name='name', max_length=255, default="")
@@ -75,9 +78,11 @@ class PersonalDetails(models.Model):
     phone = models.CharField(verbose_name='phone', max_length=255, default="")
     vk_id = models.CharField(verbose_name='image_url', max_length=1000, default="", null=True)
 
-class Client(models.Model):
-    credentials = models.ForeignKey(Credentials, null=False)
-    details = models.ForeignKey(PersonalDetails, null=True)
+
+class Master(models.Model):
+    details = models.ForeignKey(PersonalDetails, null=False)
+    description = models.CharField(verbose_name='description', max_length=1000, default="")
+    image_url = models.CharField(verbose_name='description', max_length=1000, default="")
 
 
 class Salon(models.Model):
@@ -93,13 +98,27 @@ class Salon(models.Model):
     latitude = models.FloatField(verbose_name='latitude', default=0)
     place_flag = models.IntegerField(verbose_name='place_flag', default=0)
     company_flag = models.IntegerField(verbose_name='company_flag', default=0)
+    masters = models.ManyToManyField(Master)
+
+
+class Client(models.Model):
+    credentials = models.ForeignKey(Credentials, null=False)
+    details = models.ForeignKey(PersonalDetails, null=True)
+    high_price = models.IntegerField(verbose_name='high_price', default=-1)
+    place_flag = models.IntegerField(verbose_name='place_flag', default=0)
+    company_flag = models.IntegerField(verbose_name='company_flag', default=0)
+    max_distance = models.FloatField(verbose_name='max_distance', default=-1)
+    favorite_salons = models.ManyToManyField(Salon)
+
 
 class Photo(models.Model):
     salon = models.ForeignKey(Salon, null=False)
     url = models.CharField(verbose_name='url', max_length=255, default="")
 
+
 class Category(models.Model):
     name = models.CharField(verbose_name='name', max_length=255, default="")
     description = models.CharField(verbose_name='description', max_length=1000, default="")
     image_url = models.CharField(verbose_name='image_url', max_length=1000, default="def url")
+
 

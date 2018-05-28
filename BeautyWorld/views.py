@@ -27,6 +27,11 @@ def salon(request):
             for url in urls:
                 urls_array.append(url["url"])
             sal["urls_array"] = urls_array
+            masters = Master.objects.filter(salon=sal["id"]).values()
+            for mast in masters:
+                details = PersonalDetails.objects.filter(pk=mast["id"]).values().first()
+                mast["details"] = details
+            sal["masters"] = list(masters)
         data = list(salons)
         return JsonResponse({"code": 0, "data": data})
     except Exception as e:
@@ -78,3 +83,36 @@ def create_user(phone, password):
     else:
         return (None, "Такой пользователь уже существует")
 
+
+def create_master(name, surname, date, description, image_url):
+    pass
+
+def get_salons(client_id):
+    salons = []
+    if client_id is None:
+        salons = Salon.objects.all().values()
+    else:
+        salons = Salon.objects.filter(client=client_id)
+
+    for sal in salons:
+        urls = list(Photo.objects.filter(salon=sal["id"]).values())
+        sal["urls"] = urls
+        urls_array = []
+        for url in urls:
+            urls_array.append(url["url"])
+        sal["urls_array"] = urls_array
+        masters = Master.objects.filter(salon=sal["id"]).values()
+        for mast in masters:
+            details = PersonalDetails.objects.filter(pk=mast["id"]).values().first()
+            mast["details"] = details
+        sal["masters"] = list(masters)
+
+def get_masters(salon_id):
+    masters = []
+    if salon_id is None:
+
+    masters = Master.objects.filter(salon=salon_id).values()
+    for mast in masters:
+        details = PersonalDetails.objects.filter(pk=mast["id"]).values().first()
+        mast["details"] = details
+    return list(masters)
