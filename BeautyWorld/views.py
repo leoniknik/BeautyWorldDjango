@@ -17,7 +17,7 @@ def category(request):
 
 def salon(request):
     try:
-        salons = get_salons(None)
+        salons = get_salons()
         data = list(salons)
         return JsonResponse({"code": 0, "data": data})
     except Exception as e:
@@ -48,17 +48,15 @@ def sign_in(request):
             return JsonResponse({"code": 1, "data": {"code": 1, "message": "Такого пользователя нет"}})
         else:
             cred = Credentials.objects.filter(phone=body["phone"], password=body["password"]).first()
-            client = Client.objects.filter(credentials=cred).values().first()
-            client["credentials"] = Credentials.objects.filter(phone=body["phone"],
-                                                               password=body["password"]).values().first()
-            return JsonResponse({"code": 0, "data": client})
+
+            return JsonResponse({"code": 0, "data": get_client(cred)})
     except Exception as e:
         print(e)
         return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
 
 
 def create_user(phone, password):
-    if not Credentials.objects.filter(phone=phone, password=password).exists():
+    if Credentials.objects.filter(phone=phone, password=password).count() == 0:
         cred = Credentials()
         cred.phone = phone
         cred.password = password
@@ -67,26 +65,36 @@ def create_user(phone, password):
         client = Client(credentials=cred)
         client.save()
         client_id = client.id
-        return Client.objects.get(id=client_id), ""
+        cart = Cart(client=Client.objects.get(id=client_id))
+        cart.save()
+        return Client.objects.filter(id=client_id).values().first(), ""
     else:
         return None, "Такой пользователь уже существует"
 
 
-def get_salons(client_id):
-    if client_id is None:
-        salons = Salon.objects.all().values()
-    else:
-        salons = Salon.objects.filter(client=client_id)
-
+def get_salons():
+    #if cred is None:
+    salons = Salon.objects.all().values()
+    #else:
+    #    salons = Client.objects.filter(credentials=cred).first().favorite_salons.all().values()
     for sal in salons:
-        urls = list(Photo.objects.filter(salon=sal["id"]).values())
-        sal["urls"] = urls
-        urls_array = []
-        for url in urls:
-            urls_array.append(url["url"])
-        sal["urls_array"] = urls_array
-        sal["masters"] = get_masters(sal["id"])
+        sal = get_salon_info(sal)
     return salons
+
+def get_salon_info(sal):
+    urls = list(Photo.objects.filter(salon=sal["id"]).values())
+    sal["urls"] = urls
+    urls_array = []
+    for url in urls:
+        urls_array.append(url["url"])
+    sal["urls_array"] = urls_array
+    sal["masters"] = get_masters(sal["id"])
+
+    services = list(Service.objects.filter(salon=Salon.objects.get(pk=sal["id"])).values())
+    for serv in services:
+        serv["category"] = Category.objects.filter(pk=serv["category_id"]).values().first()
+    sal["services"] = services
+    return sal
 
 
 def get_masters(salon_id):
@@ -100,7 +108,48 @@ def get_masters(salon_id):
 
 
 def get_details(pers_id):
-    # details_obj = PersonalDetails.objects.filter(pk=pers_id).first()
     details = PersonalDetails.objects.filter(pk=pers_id).values().first()
-    # details["birth_date"] = details_obj.birth_date.strftime('%d.%m.%Y')
     return details
+
+
+
+def get_cart(cred):
+    client = Client.objects.get(credentials=cred)
+    cart = Cart.objects.filter(client=client,order__isnull=True).values().first()
+    services = list(Cart.objects.get(client=client,order=None).services.all().values())
+    cart["services"] = services
+    services_ids = []
+    for serv in services:
+        services_ids.append(serv["id"])
+    cart["services_ids"] = services_ids
+    return cart
+
+def get_orders(cred):
+    client = Client.objects.get(credentials=cred)
+    carts = list(Cart.objects.exclude(order__isnull = True).filter(client=client).values())
+    for cart in carts:
+        order_obj = Order.objects.filter(pk=cart["order_id"]).values().first()
+        order_obj["status"] = OrderStatus.objects.filter(pk=order_obj["status_id"]).values().first()
+        services = list(Cart.objects.get(pk=cart["id"]).services.all().values())
+        services_ids = []
+        for serv in services:
+            serv["salon"] = get_salon_info(Salon.objects.filter(pk=order_obj["salon_id"]).values().first())
+            services_ids.append(serv["id"])
+        cart["services_ids"] = services_ids
+        cart["services"] = services
+        cart["order"] = order_obj
+
+    return carts
+
+def get_client(cred):
+    client = Client.objects.filter(credentials=cred).values().first()
+    client["credentials"] = Credentials.objects.filter(pk = cred.id).values().first()
+    #salons = list(get_salons(cred))
+    #salons_ids = []
+    #for sl in Client.objects.filter(credentials=cred).first().favorite_salons.all():
+    #    salons_ids.append(sl.id)
+    #client["favorite_ids"] = salons_ids
+    #client["favorite"] = salons
+    client["cart"] = get_cart(cred)
+    client["orders"] = get_orders(cred)
+    return client
