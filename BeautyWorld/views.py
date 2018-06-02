@@ -80,6 +80,18 @@ def sign_in(request):
 
 def set_favorite(request):
     try:
+        id = 0
+        flag = 0
+        type = request.content_type
+        if type == "multipart/form-data":
+            ids = eval(request.POST["categories"])
+            client_id = request.POST["id"]
+        elif type == "application/json":
+            body_json = json.loads(request.body)
+            ids = eval(body_json["categories"])
+            client_id = body_json["id"]
+        else:
+            return JsonResponse({"code": 1, "data": {"code": 1, "message": "parse error"}})
         return JsonResponse({"code": 0})
     except Exception as e:
         print(e)
@@ -109,6 +121,65 @@ def api_cart(request):
             new_cart.categories.add(service)
         new_cart.save()
         return JsonResponse({"code": 0, "data": new_cart.id})
+    except Exception as e:
+        print(e)
+        return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
+
+def api_offers(request):
+    try:
+        ids = eval(request.GET["categories"])
+        client_id = request.GET["id"]
+        ##type = request.content_type
+        #f type == "multipart/form-data":
+        #   ids = eval(request.POST["categories"])
+        ##    client_id = request.POST["id"]
+        #elif type == "application/json":
+        #    body_json = json.loads(request.body)
+        #    ids = eval(body_json["categories"])
+        #    client_id = body_json["id"]
+        #else:
+        #    return JsonResponse({"code": 1, "data": {"code": 1, "message": "parse error"}})
+
+
+        client = Client.objects.get(pk=client_id)
+
+        categories = []
+        for id in ids:
+            cat = Category.objects.get(pk=id)
+            categories.append(cat)
+
+        new_cart = Cart(client=client)
+        new_cart.closed = False
+        new_cart.save()
+        for id in ids:
+            service = Category.objects.get(pk=id)
+            new_cart.categories.add(service)
+        new_cart.save()
+
+        #import filters
+        all_salons = Salon.objects.filter()
+        orders =[]
+        for salon in all_salons:
+            services = []
+            price=0
+            for cat in categories:
+                if Service.objects.filter(salon=salon,category=cat).count()>0:
+                    service = Service.objects.filter(salon=salon, category=cat).first()
+                    services.append(service.id)
+                    price+=service.price
+            if len(services) == len(categories):
+                orders.append((salon.id,services,price))
+
+        output = []
+        for order in orders:
+            item = {}
+            salon = Salon.objects.filter(pk=order[0]).values().first()
+            item["salon"] = salon
+            services = list(Service.objects.filter(pk__in = order[1]).values())
+            item["services"] = services
+            item["price"] = order[2]
+            output.append(item)
+        return JsonResponse({"code": 0, "data": output})
     except Exception as e:
         print(e)
         return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
