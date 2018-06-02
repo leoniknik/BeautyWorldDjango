@@ -82,13 +82,12 @@ class Cart(models.Model):
 
 class Order(models.Model):
     master = models.ForeignKey(Master, null = True)
-
+    services = models.ManyToManyField(Service)
     date = models.DateTimeField(verbose_name = 'date', default = ut.timezone.now)
     status = models.ForeignKey(OrderStatus, null = False)
     salon = models.ForeignKey(Salon, null = True)
     info = models.CharField(verbose_name = 'info', max_length = 2000, default = "")
     cart = models.ForeignKey(Cart,null=False)
-
 
 
 class Feedback(models.Model):

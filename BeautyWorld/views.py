@@ -5,7 +5,7 @@ from django.core import serializers
 import json
 
 
-def category(request):
+def api_category(request):
     try:
         categories = Category.objects.all().values()
         data = list(categories)
@@ -15,7 +15,7 @@ def category(request):
         return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
 
 
-def salon(request):
+def api_salon(request):
     try:
         salons = get_salons()
         data = list(salons)
@@ -62,7 +62,7 @@ def set_favorite(request):
         return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
 
 
-def cart(request):
+def api_cart(request):
     try:
         ids = eval(request.POST["categories"])
         client = Client.objects.get(id=request.POST["id"])
@@ -79,12 +79,12 @@ def cart(request):
         return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
 
 
-def orders(request):
+def api_orders(request):
     try:
         id = request.GET['id']
         client = Client.objects.get(pk=id)
 
-        return JsonResponse({"code": 0, "data": None})
+        return JsonResponse({"code": 0, "data": get_closed_carts(client.id)})
     except Exception as e:
         print(e)
         return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
@@ -159,7 +159,7 @@ def get_details(pers_id):
 #    return cart
 
 def get_closed_carts(client_id):
-    carts = Cart.objects.filter(client=client_id,closed=True).values()
+    carts = list(Cart.objects.filter(client=client_id,closed=True).values())
     for cart in carts:
         orders_array = Order.objects.filter(cart=cart["id"]).values()
         for order in orders_array:
@@ -169,13 +169,17 @@ def get_closed_carts(client_id):
             master = Master.objects.filter(pk=master_id).values().first()
             master["details"] = get_details(master["id"])
             order["master"]=master
-        cart["orders"] = list(orders)
-    #services = list(Cart.objects.get(client=client_id,order=None).services.all().values())
-    #cart["services"] = services
-    #services_ids = []
-    #for serv in services:
-    #    services_ids.append(serv["id"])
-    #cart["services_ids"] = services_ids
+            order_obj = Order.objects.get(pk=order["id"])
+            servs = order_obj.services.all().values()
+            order["services"] = list(servs)
+        cart["orders"] = list(orders_array)
+        cart_obj = Cart.objects.get(pk=cart["id"])
+        categories = list(cart_obj.categories.all().values())
+        categories_ids = []
+        for cat in categories:
+            categories_ids.append(cat["id"])
+        #cart["categories"]=categories
+        cart["categories_ids"] = categories_ids
     return list(carts)
 
 
@@ -211,6 +215,7 @@ def get_orders(cred):
 def get_client(cred):
     client = Client.objects.filter(credentials=cred).values().first()
 
+
     #carts = get_closed_carts(client["id"])
 
     client_obj = Client.objects.get(credentials=cred)
@@ -220,6 +225,8 @@ def get_client(cred):
     for sl in Client.objects.filter(credentials=cred).first().favorite_salons.all():
         salons_ids.append(sl.id)
     client["favorite"] = salons_ids
+    client["filters"] = Client.objects.filter(credentials=cred).values("high_price","place_flag","company_flag","max_distance").first()
+
     #client["favorite"] = salons
     #carts_closed_ids = []
     #for crt in Cart.objects.filter(client=client_obj,order=None,closed=True):
