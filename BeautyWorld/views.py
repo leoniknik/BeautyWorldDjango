@@ -27,10 +27,9 @@ def salon(request):
 
 def sign_up(request):
     try:
-        body_unicode = request.body.decode('utf-8')
-        body = json.loads(body_unicode)
-
-        res = create_user(body["phone"], body["password"])
+        phone = request.POST["phone"]
+        password = request.POST["password"]
+        res = create_user(phone, password)
         if res[0] is None:
             return JsonResponse({"code": 1, "data": {"code": 1, "message": res[1]}})
         else:
@@ -42,12 +41,12 @@ def sign_up(request):
 
 def sign_in(request):
     try:
-        body_unicode = request.body.decode('utf-8')
-        body = json.loads(body_unicode)
-        if not Credentials.objects.filter(phone=body["phone"], password=body["password"]).exists():
+        phone = request.POST["phone"]
+        password = request.POST["password"]
+        if not Credentials.objects.filter(phone=phone, password=password).exists():
             return JsonResponse({"code": 1, "data": {"code": 1, "message": "Такого пользователя нет"}})
         else:
-            cred = Credentials.objects.filter(phone=body["phone"], password=body["password"]).first()
+            cred = Credentials.objects.filter(phone=phone, password=password).first()
 
             return JsonResponse({"code": 0, "data": get_client(cred)})
     except Exception as e:
@@ -56,20 +55,8 @@ def sign_in(request):
 
 def set_favorite(request):
     try:
-        body_unicode = request.body.decode('utf-8')
-        body = json.loads(body_unicode)
-        ids = body["categories"]
-        client = Client.objects.get(id=body["id"])
-        new_cart = Cart(client=client)
-        new_cart.closed = True
+        return JsonResponse({"code": 0})
 
-
-
-        if not Credentials.objects.filter(phone=body["phone"], password=body["password"]).exists():
-            return JsonResponse({"code": 1, "data": {"code": 1, "message": "Такого пользователя нет"}})
-        else:
-            cred = Credentials.objects.filter(phone=body["phone"], password=body["password"]).first()
-            return JsonResponse({"code": 0, "data": get_client(cred)})
     except Exception as e:
         print(e)
         return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
@@ -77,10 +64,8 @@ def set_favorite(request):
 
 def cart(request):
     try:
-        body_unicode = request.body.decode('utf-8')
-        body = json.loads(body_unicode)
-        ids = body["categories"]
-        client = Client.objects.get(id=body["id"])
+        ids = eval(request.POST["categories"])
+        client = Client.objects.get(id=request.POST["id"])
         new_cart = Cart(client=client)
         new_cart.closed = True
         new_cart.save()
@@ -99,7 +84,7 @@ def orders(request):
         id = request.GET['id']
         client = Client.objects.get(pk=id)
 
-        return JsonResponse({"code": 0, "data": new_cart.id})
+        return JsonResponse({"code": 0, "data": None})
     except Exception as e:
         print(e)
         return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
