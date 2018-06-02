@@ -176,7 +176,14 @@ def get_details(pers_id):
 def get_closed_carts(client_id):
     carts = Cart.objects.filter(client=client_id,closed=True).values()
     for cart in carts:
-        orders = Order.objects.filter(cart=cart["id"]).values()
+        orders_array = Order.objects.filter(cart=cart["id"]).values()
+        for order in orders_array:
+            salon_id = order["salon_id"]
+            order["salon"]=Salon.objects.filter(pk=salon_id).values().first()
+            master_id = order["master_id"]
+            master = Master.objects.filter(pk=master_id).values().first()
+            master["details"] = get_details(master["id"])
+            order["master"]=master
         cart["orders"] = list(orders)
     #services = list(Cart.objects.get(client=client_id,order=None).services.all().values())
     #cart["services"] = services
