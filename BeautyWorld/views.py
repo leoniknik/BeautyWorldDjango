@@ -177,6 +177,8 @@ def api_offers(request):
             salon = get_salon_info(salon)
             item["salon"] = salon
             services = list(Service.objects.filter(pk__in = order[1]).values())
+            for serv in services:
+                serv["category"] = Category.objects.filter(pk=serv["category_id"]).values().first()
             item["services"] = services
             item["price"] = order[2]
             output.append(item)
@@ -239,6 +241,7 @@ def get_salon_info(sal):
     return sal
 
 
+
 def get_masters(salon_id):
     if salon_id is None:
         masters = Master.objects.all().values()
@@ -278,6 +281,8 @@ def get_closed_carts(client_id):
             order["master"] = master
             order_obj = Order.objects.get(pk=order["id"])
             servs = order_obj.services.all().values()
+
+
             order["services"] = list(servs)
         cart["orders"] = list(orders_array)
         cart_obj = Cart.objects.get(pk=cart["id"])
