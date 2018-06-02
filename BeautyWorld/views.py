@@ -205,7 +205,7 @@ def get_orders(cred):
         services = list(Cart.objects.get(pk=cart["id"]).services.all().values())
         services_ids = []
         for serv in services:
-            serv["salon"] = get_salon_info(Salon.objects.filter(pk=order_obj["salon_id"]).values().first())
+            serv["salon"] = get_salon_info(Salon.objects.filter(pk=order_obj["salon_id",""]).values().first())
             services_ids.append(serv["id"])
         cart["services_ids"] = services_ids
         cart["services"] = services
@@ -220,7 +220,7 @@ def get_client(cred):
     # carts = get_closed_carts(client["id"])
 
     client_obj = Client.objects.get(credentials=cred)
-    client["credentials"] = Credentials.objects.filter(pk=cred.id).values().first()
+    #client["credentials"] = Credentials.objects.filter(pk=cred.id).values().first()
     # salons = list(get_salons(cred))
     salons_ids = []
     for sl in Client.objects.filter(credentials=cred).first().favorite_salons.all():
