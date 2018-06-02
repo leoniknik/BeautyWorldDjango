@@ -27,8 +27,20 @@ def api_salon(request):
 
 def sign_up(request):
     try:
-        phone = request.POST["phone"]
-        password = request.POST["password"]
+        phone = ""
+        password = ""
+        type = request.content_type
+        if type == "multipart/form-data":
+            phone = request.POST["phone"]
+            password = request.POST["password"]
+        elif type == "application/json":
+            body_json = json.loads(request.body)
+            phone = body_json["phone"]
+            password = body_json["password"]
+        else:
+            return JsonResponse({"code": 1, "data": {"code": 1, "message": "parse error"}})
+
+
         res = create_user(phone, password)
         if res[0] is None:
             return JsonResponse({"code": 1, "data": {"code": 1, "message": res[1]}})
