@@ -53,8 +53,20 @@ def sign_up(request):
 
 def sign_in(request):
     try:
-        phone = request.POST["phone"]
-        password = request.POST["password"]
+
+        phone = ""
+        password = ""
+        type = request.content_type
+        if type == "multipart/form-data":
+            phone = request.POST["phone"]
+            password = request.POST["password"]
+        elif type == "application/json":
+            body_json = json.loads(request.body)
+            phone = body_json["phone"]
+            password = body_json["password"]
+        else:
+            return JsonResponse({"code": 1, "data": {"code": 1, "message": "parse error"}})
+
         if not Credentials.objects.filter(phone=phone, password=password).exists():
             return JsonResponse({"code": 1, "data": {"code": 1, "message": "Такого пользователя нет"}})
         else:
@@ -76,8 +88,19 @@ def set_favorite(request):
 
 def api_cart(request):
     try:
-        ids = eval(request.POST["categories"])
-        client = Client.objects.get(id=request.POST["id"])
+        ids = []
+        client_id = 0
+        type = request.content_type
+        if type == "multipart/form-data":
+            ids = eval(request.POST["categories"])
+            client_id = request.POST["id"]
+        elif type == "application/json":
+            body_json = json.loads(request.body)
+            ids = eval(body_json["categories"])
+            client_id = body_json["id"]
+        else:
+            return JsonResponse({"code": 1, "data": {"code": 1, "message": "parse error"}})
+        client = Client.objects.get(pk=client_id)
         new_cart = Cart(client=client)
         new_cart.closed = True
         new_cart.save()
@@ -93,9 +116,8 @@ def api_cart(request):
 
 def api_orders(request):
     try:
-        id = request.GET['id']
+        id = request.GET["id"]
         client = Client.objects.get(pk=id)
-
         return JsonResponse({"code": 0, "data": get_closed_carts(client.id)})
     except Exception as e:
         print(e)
