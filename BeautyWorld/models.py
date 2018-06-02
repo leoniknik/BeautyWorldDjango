@@ -49,7 +49,7 @@ class Client(models.Model):
     place_flag = models.IntegerField(verbose_name='place_flag', default=0)
     company_flag = models.IntegerField(verbose_name='company_flag', default=0)
     max_distance = models.FloatField(verbose_name='max_distance', default=-1)
-    #favorite_salons = models.ManyToManyField(Salon)
+    favorite_salons = models.ManyToManyField(Salon)
 
 
 class Photo(models.Model):
@@ -89,6 +89,7 @@ class Cart(models.Model):
     services = models.ManyToManyField(Service)
     client = models.ForeignKey(Client,null=False)
     order = models.ForeignKey(Order,null=True)
+    closed = models.BooleanField(verbose_name = 'closed', default = False)
 
 class Feedback(models.Model):
     pass

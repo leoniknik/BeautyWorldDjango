@@ -67,7 +67,7 @@ def create_user(phone, password):
         client_id = client.id
         cart = Cart(client=Client.objects.get(id=client_id))
         cart.save()
-        return Client.objects.filter(id=client_id).values().first(), ""
+        return get_client(cred), ""
     else:
         return None, "Такой пользователь уже существует"
 
@@ -113,6 +113,17 @@ def get_details(pers_id):
 
 
 
+def get_closed_carts(cred):
+    client = Client.objects.get(credentials=cred)
+    cart = Cart.objects.filter(client=client,order__isnull=True).values().first()
+    services = list(Cart.objects.get(client=client,order=None).services.all().values())
+    cart["services"] = services
+    services_ids = []
+    for serv in services:
+        services_ids.append(serv["id"])
+    cart["services_ids"] = services_ids
+    return cart
+
 def get_cart(cred):
     client = Client.objects.get(credentials=cred)
     cart = Cart.objects.filter(client=client,order__isnull=True).values().first()
@@ -143,13 +154,21 @@ def get_orders(cred):
 
 def get_client(cred):
     client = Client.objects.filter(credentials=cred).values().first()
+    client_obj = Client.objects.get(credentials=cred)
     client["credentials"] = Credentials.objects.filter(pk = cred.id).values().first()
     #salons = list(get_salons(cred))
-    #salons_ids = []
-    #for sl in Client.objects.filter(credentials=cred).first().favorite_salons.all():
-    #    salons_ids.append(sl.id)
-    #client["favorite_ids"] = salons_ids
+    salons_ids = []
+    for sl in Client.objects.filter(credentials=cred).first().favorite_salons.all():
+        salons_ids.append(sl.id)
+    client["favorite"] = salons_ids
     #client["favorite"] = salons
-    client["cart"] = get_cart(cred)
-    client["orders"] = get_orders(cred)
+    carts_closed_ids = []
+    for crt in Cart.objects.filter(client=client_obj,order=None,closed=True):
+        carts_closed_ids.append(crt.id)
+    client["current_cart"] = Cart.objects.filter(client=client_obj,closed=False).first().id
+    client["closed_carts"] = carts_closed_ids
+    orders_ids=[]
+    for ord in Cart.objects.filter(client=client_obj).exclude(order=None,closed=False):
+        orders_ids.append(ord.id)
+    client["carts_with_orders"] = orders_ids
     return client
