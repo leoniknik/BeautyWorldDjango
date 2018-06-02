@@ -1,5 +1,5 @@
 from django.conf.urls import url, include
-from BeautyWorld.views import category, sign_up, sign_in, salon
+from BeautyWorld.views import category, sign_up, sign_in, salon, cart
 urlpatterns = [
     #url(r'^signin$', signin),  # POST
     #url(r'^signup$', signup),  # POST
@@ -15,4 +15,6 @@ urlpatterns = [
     url(r'^salon$', salon),  # GET
     url(r'^signup$', sign_up),  # POST
     url(r'^signin$', sign_in),  # POST
+    url(r'^cart$', cart),  # POST
+    #url(r'^orders$', orders),  # GET
 ]

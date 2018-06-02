@@ -75,6 +75,10 @@ class Service(models.Model):
 class OrderStatus(models.Model):
     status = models.CharField(verbose_name = 'status', max_length = 255, default = "")
 
+class Cart(models.Model):
+    categories = models.ManyToManyField(Category)
+    client = models.ForeignKey(Client,null=False)
+    closed = models.BooleanField(verbose_name = 'closed', default = False)
 
 class Order(models.Model):
     master = models.ForeignKey(Master, null = True)
@@ -83,13 +87,9 @@ class Order(models.Model):
     status = models.ForeignKey(OrderStatus, null = False)
     salon = models.ForeignKey(Salon, null = True)
     info = models.CharField(verbose_name = 'info', max_length = 2000, default = "")
+    cart = models.ForeignKey(Cart,null=False)
 
 
-class Cart(models.Model):
-    services = models.ManyToManyField(Service)
-    client = models.ForeignKey(Client,null=False)
-    order = models.ForeignKey(Order,null=True)
-    closed = models.BooleanField(verbose_name = 'closed', default = False)
 
 class Feedback(models.Model):
     pass

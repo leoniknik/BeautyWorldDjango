@@ -54,6 +54,55 @@ def sign_in(request):
         print(e)
         return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
 
+def set_favorite(request):
+    try:
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+        ids = body["categories"]
+        client = Client.objects.get(id=body["id"])
+        new_cart = Cart(client=client)
+        new_cart.closed = True
+
+
+
+        if not Credentials.objects.filter(phone=body["phone"], password=body["password"]).exists():
+            return JsonResponse({"code": 1, "data": {"code": 1, "message": "Такого пользователя нет"}})
+        else:
+            cred = Credentials.objects.filter(phone=body["phone"], password=body["password"]).first()
+            return JsonResponse({"code": 0, "data": get_client(cred)})
+    except Exception as e:
+        print(e)
+        return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
+
+
+def cart(request):
+    try:
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+        ids = body["categories"]
+        client = Client.objects.get(id=body["id"])
+        new_cart = Cart(client=client)
+        new_cart.closed = True
+        new_cart.save()
+        for id in ids:
+            service = Category.objects.get(pk=id)
+            new_cart.categories.add(service)
+        new_cart.save()
+        return JsonResponse({"code": 0, "data": new_cart.id})
+    except Exception as e:
+        print(e)
+        return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
+
+
+def orders(request):
+    try:
+        id = request.GET['id']
+        client = Client.objects.get(pk=id)
+
+        return JsonResponse({"code": 0, "data": new_cart.id})
+    except Exception as e:
+        print(e)
+        return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
 
 def create_user(phone, password):
     if Credentials.objects.filter(phone=phone, password=password).count() == 0:
@@ -113,16 +162,31 @@ def get_details(pers_id):
 
 
 
-def get_closed_carts(cred):
-    client = Client.objects.get(credentials=cred)
-    cart = Cart.objects.filter(client=client,order__isnull=True).values().first()
-    services = list(Cart.objects.get(client=client,order=None).services.all().values())
-    cart["services"] = services
-    services_ids = []
-    for serv in services:
-        services_ids.append(serv["id"])
-    cart["services_ids"] = services_ids
-    return cart
+#def get_closed_carts(cred):
+#    client = Client.objects.get(credentials=cred)
+#    cart = Cart.objects.filter(client=client,order__isnull=True).values().first()
+#    services = list(Cart.objects.get(client=client,order=None).services.all().values())
+#    cart["services"] = services
+#    services_ids = []
+#    for serv in services:
+#        services_ids.append(serv["id"])
+#    cart["services_ids"] = services_ids
+#    return cart
+
+def get_closed_carts(client_id):
+    carts = Cart.objects.filter(client=client_id,closed=True).values()
+    for cart in carts:
+        orders = Order.objects.filter(cart=cart["id"]).values()
+        cart["orders"] = list(orders)
+    #services = list(Cart.objects.get(client=client_id,order=None).services.all().values())
+    #cart["services"] = services
+    #services_ids = []
+    #for serv in services:
+    #    services_ids.append(serv["id"])
+    #cart["services_ids"] = services_ids
+    return list(carts)
+
+
 
 def get_cart(cred):
     client = Client.objects.get(credentials=cred)
@@ -154,6 +218,9 @@ def get_orders(cred):
 
 def get_client(cred):
     client = Client.objects.filter(credentials=cred).values().first()
+
+    #carts = get_closed_carts(client["id"])
+
     client_obj = Client.objects.get(credentials=cred)
     client["credentials"] = Credentials.objects.filter(pk = cred.id).values().first()
     #salons = list(get_salons(cred))
@@ -162,13 +229,15 @@ def get_client(cred):
         salons_ids.append(sl.id)
     client["favorite"] = salons_ids
     #client["favorite"] = salons
-    carts_closed_ids = []
-    for crt in Cart.objects.filter(client=client_obj,order=None,closed=True):
-        carts_closed_ids.append(crt.id)
-    client["current_cart"] = Cart.objects.filter(client=client_obj,closed=False).first().id
-    client["closed_carts"] = carts_closed_ids
-    orders_ids=[]
-    for ord in Cart.objects.filter(client=client_obj).exclude(order=None,closed=False):
-        orders_ids.append(ord.id)
-    client["carts_with_orders"] = orders_ids
+    #carts_closed_ids = []
+    #for crt in Cart.objects.filter(client=client_obj,order=None,closed=True):
+    #    carts_closed_ids.append(crt.id)
+    #client["current_cart"] = Cart.objects.filter(client=client_obj,closed=False).first().id
+    #client["closed_carts"] = get_closed_carts(client_obj.id)
+    #orders_ids=[]
+    #for ord in Cart.objects.filter(client=client_obj).exclude(order=None,closed=False):
+    #    orders_ids.append(ord.id)
+    #client["carts_with_orders"] = orders_ids
     return client
+
+#def orders
