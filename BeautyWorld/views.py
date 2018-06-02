@@ -174,6 +174,7 @@ def api_offers(request):
         for order in orders:
             item = {}
             salon = Salon.objects.filter(pk=order[0]).values().first()
+            salon = get_salon_info(salon)
             item["salon"] = salon
             services = list(Service.objects.filter(pk__in = order[1]).values())
             item["services"] = services
