@@ -17,7 +17,7 @@ class PersonalDetails(models.Model):
     surname = models.CharField(verbose_name='surname', max_length=255, default="")
     birth_date = models.DateTimeField(verbose_name='birth_date', default=ut.timezone.now)
     phone = models.CharField(verbose_name='phone', max_length=255, default="")
-    vk_id = models.CharField(verbose_name='image_url', max_length=1000, default="", null=True)
+#    vk_id = models.CharField(verbose_name='image_url', max_length=1000, default="", null=True)
 
 
 class Master(models.Model):
@@ -85,10 +85,13 @@ class Order(models.Model):
     services = models.ManyToManyField(Service)
     date = models.DateTimeField(verbose_name = 'date', default = ut.timezone.now)
     status = models.ForeignKey(OrderStatus, null = False)
-    salon = models.ForeignKey(Salon, null = True)
+    salon = models.ForeignKey(Salon, null = False)
     info = models.CharField(verbose_name = 'info', max_length = 2000, default = "")
     cart = models.ForeignKey(Cart,null=False)
 
 
 class Feedback(models.Model):
-    pass
+    points = models.IntegerField(verbose_name="points", default=0)
+    comment = models.CharField(verbose_name="comment", max_length=1000, default="")
+    client = models.ForeignKey(Client, null=False)
+    order = models.ForeignKey(Order, null=False)

@@ -1,9 +1,13 @@
 from django.shortcuts import render
 from BeautyWorld.models import *
-from django.http import JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponse,HttpResponseNotFound, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseRedirect
 from django.core import serializers
 import json
-
+import random
+import mimetypes
+import os
+from BeautyWorld.forms import *
+from BeautyWorld.docGeneration import create_file
 
 def api_category(request):
     try:
@@ -98,49 +102,12 @@ def set_favorite(request):
         return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
 
 
-def api_cart(request):
-    try:
-        ids = []
-        client_id = 0
-        type = request.content_type
-        if type == "multipart/form-data":
-            ids = eval(request.POST["categories"])
-            client_id = request.POST["id"]
-        elif type == "application/json":
-            body_json = json.loads(request.body)
-            ids = eval(body_json["categories"])
-            client_id = body_json["id"]
-        else:
-            return JsonResponse({"code": 1, "data": {"code": 1, "message": "parse error"}})
-        client = Client.objects.get(pk=client_id)
-        new_cart = Cart(client=client)
-        new_cart.closed = True
-        new_cart.save()
-        for id in ids:
-            service = Category.objects.get(pk=id)
-            new_cart.categories.add(service)
-        new_cart.save()
-        return JsonResponse({"code": 0, "data": new_cart.id})
-    except Exception as e:
-        print(e)
-        return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
+
 
 def api_offers(request):
     try:
         ids = eval(request.GET["categories"])
         client_id = request.GET["id"]
-        ##type = request.content_type
-        #f type == "multipart/form-data":
-        #   ids = eval(request.POST["categories"])
-        ##    client_id = request.POST["id"]
-        #elif type == "application/json":
-        #    body_json = json.loads(request.body)
-        #    ids = eval(body_json["categories"])
-        #    client_id = body_json["id"]
-        #else:
-        #    return JsonResponse({"code": 1, "data": {"code": 1, "message": "parse error"}})
-
-
         client = Client.objects.get(pk=client_id)
 
         categories = []
@@ -163,7 +130,7 @@ def api_offers(request):
             services = []
             price=0
             for cat in categories:
-                if Service.objects.filter(salon=salon,category=cat).count()>0:
+                if Service.objects.filter(salon=salon, category=cat).count()>0:
                     service = Service.objects.filter(salon=salon, category=cat).first()
                     services.append(service.id)
                     price+=service.price
@@ -172,9 +139,21 @@ def api_offers(request):
 
         output = []
         for order in orders:
+            ord_obj = Order(status_id=1,cart=new_cart,salon_id=order[0])
+            ord_obj.save()
+            for service in Service.objects.filter(pk__in = order[1]):
+                ord_obj.services.add(service)
+            ord_obj.save()
+            masters = Master.objects.filter(salon=order[0])
+            cnt = masters.count()
+            mast_id = random.randint(0, cnt-1)
+            master = masters[mast_id]
+            ord_obj.master=master
+            ord_obj.save()
             item = {}
             salon = Salon.objects.filter(pk=order[0]).values().first()
             salon = get_salon_info(salon)
+            item["id"]=ord_obj.id
             item["salon"] = salon
             services = list(Service.objects.filter(pk__in = order[1]).values())
             for serv in services:
@@ -188,6 +167,83 @@ def api_offers(request):
         return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
 
 
+def api_choose_offer(request):
+    try:
+        client_id = 0
+        offer_id = 0
+        type = request.content_type
+        if type == "multipart/form-data":
+            offer_id = request.POST["offer_id"]
+            client_id = request.POST["client_id"]
+        elif type == "application/json":
+            body_json = json.loads(request.body)
+            offer_id = body_json["offer_id"]
+            client_id = body_json["client_id"]
+        else:
+            return JsonResponse({"code": 1, "data": {"code": 1, "message": "parse error"}})
+
+        order = Order.objects.get(pk=offer_id)
+        cart = order.cart
+
+        orders = list(Order.objects.filter(cart=cart).exclude(pk=order.id))
+        for order in orders:
+            order.delete()
+        cart.closed=True
+        cart.save()
+        order.save()
+        return JsonResponse({"code": 0})
+    except Exception as e:
+        print(e)
+        return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
+
+def api_create_order(request):
+    try:
+        client_id = 0
+        salon_id = 0
+        services_ids = []
+        type = request.content_type
+        if type == "multipart/form-data":
+            salon_id = request.POST["salon_id"]
+            client_id = request.POST["client_id"]
+            services_ids = eval(request.POST["services"])
+        elif type == "application/json":
+            body_json = json.loads(request.body)
+            salon_id = body_json["salon_id"]
+            client_id = body_json["client_id"]
+            services_ids = eval(body_json["services"])
+        else:
+            return JsonResponse({"code": 1, "data": {"code": 1, "message": "parse error"}})
+        client = Client.objects.get(pk=client_id)
+        new_cart = Cart(client=client)
+        new_cart.closed = True
+        new_cart.save()
+
+        services = Service.objects.filter(pk__in=services_ids)
+        categories = []
+        for service in services:
+            categories.append(service.category)
+            new_cart.categories.add(service.category)
+        new_cart.save()
+
+        ord_obj = Order(status_id=1, cart=new_cart, salon_id=salon_id)
+        ord_obj.save()
+        for service in services:
+            ord_obj.services.add(service)
+        ord_obj.save()
+        masters = Master.objects.filter(salon=salon_id)
+        cnt = masters.count()
+        mast_id = random.randint(0, cnt - 1)
+        master = masters[mast_id]
+        ord_obj.master = master
+        ord_obj.save()
+        return JsonResponse({"code": 0, "data":ord_obj.id})
+    except Exception as e:
+        print(e)
+        return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
+
+
+
+
 def api_orders(request):
     try:
         id = request.GET["id"]
@@ -196,7 +252,6 @@ def api_orders(request):
     except Exception as e:
         print(e)
         return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
-
 
 def create_user(phone, password):
     if Credentials.objects.filter(phone=phone, password=password).count() == 0:
@@ -208,8 +263,6 @@ def create_user(phone, password):
         client = Client(credentials=cred)
         client.save()
         client_id = client.id
-        cart = Cart(client=Client.objects.get(id=client_id))
-        cart.save()
         return get_client(cred), ""
     else:
         return None, "Такой пользователь уже существует"
@@ -256,18 +309,6 @@ def get_details(pers_id):
     details = PersonalDetails.objects.filter(pk=pers_id).values().first()
     return details
 
-
-# def get_closed_carts(cred):
-#    client = Client.objects.get(credentials=cred)
-#    cart = Cart.objects.filter(client=client,order__isnull=True).values().first()
-#    services = list(Cart.objects.get(client=client,order=None).services.all().values())
-#    cart["services"] = services
-#    services_ids = []
-#    for serv in services:
-#        services_ids.append(serv["id"])
-#    cart["services_ids"] = services_ids
-#    return cart
-
 def get_closed_carts(client_id):
     carts = list(Cart.objects.filter(client=client_id, closed=True).values())
     for cart in carts:
@@ -295,16 +336,6 @@ def get_closed_carts(client_id):
     return list(carts)
 
 
-def get_cart(cred):
-    client = Client.objects.get(credentials=cred)
-    cart = Cart.objects.filter(client=client, order__isnull=True).values().first()
-    services = list(Cart.objects.get(client=client, order=None).services.all().values())
-    cart["services"] = services
-    services_ids = []
-    for serv in services:
-        services_ids.append(serv["id"])
-    cart["services_ids"] = services_ids
-    return cart
 
 
 def get_orders(cred):
@@ -352,4 +383,91 @@ def get_client(cred):
     # client["carts_with_orders"] = orders_ids
     return client
 
-    # def orders
+
+
+
+
+
+
+
+#unused
+def get_cart(cred):
+    client = Client.objects.get(credentials=cred)
+    cart = Cart.objects.filter(client=client, order__isnull=True).values().first()
+    services = list(Cart.objects.get(client=client, order=None).services.all().values())
+    cart["services"] = services
+    services_ids = []
+    for serv in services:
+        services_ids.append(serv["id"])
+    cart["services_ids"] = services_ids
+    return cart
+
+def api_cart(request):
+    try:
+        ids = []
+        client_id = 0
+        type = request.content_type
+        if type == "multipart/form-data":
+            ids = eval(request.POST["categories"])
+            client_id = request.POST["id"]
+        elif type == "application/json":
+            body_json = json.loads(request.body)
+            ids = eval(body_json["categories"])
+            client_id = body_json["id"]
+        else:
+            return JsonResponse({"code": 1, "data": {"code": 1, "message": "parse error"}})
+        client = Client.objects.get(pk=client_id)
+        new_cart = Cart(client=client)
+        new_cart.closed = True
+        new_cart.save()
+        for id in ids:
+            service = Category.objects.get(pk=id)
+            new_cart.categories.add(service)
+        new_cart.save()
+        return JsonResponse({"code": 0, "data": new_cart.id})
+    except Exception as e:
+        print(e)
+        return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
+
+
+def login(request):
+    # if this is a POST request we need to process the form data
+    if request.method == 'POST':
+        # create a form instance and populate it with data from the request:
+        form = LoginForm(request.POST)
+        # check whether it's valid:
+        if form.is_valid():
+            # process the data in form.cleaned_data as required
+            # ...
+            # redirect to a new URL:
+            return HttpResponseRedirect('/admin/')
+
+    # if a GET (or any other method) we'll create a blank form
+    else:
+        form = LoginForm()
+
+    return render(request, 'login.html', {'form': form})
+
+def getfile(request):
+    try:
+
+        create_file(1)
+
+        file_path = 'book.xlsx'
+        print(os.getcwd())
+        fsock = open(file_path, "rb")
+        # file = fsock.read()
+        # fsock = open(file_path,"r").read()
+        file_name = os.path.basename(file_path)
+        file_size = os.path.getsize(file_path)
+        print("file size is: " + str(file_size))
+        mime_type_guess = mimetypes.guess_type(file_name)
+        if mime_type_guess is not None:
+            response = HttpResponse(fsock)
+            response['Content-Disposition'] = 'attachment; filename=' + file_name
+        else:
+            response = HttpResponseNotFound()
+    except Exception as e:
+        print(e)
+        response = HttpResponseNotFound()
+    return response
