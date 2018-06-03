@@ -183,11 +183,12 @@ def api_choose_offer(request):
             return JsonResponse({"code": 1, "data": {"code": 1, "message": "parse error"}})
 
         order = Order.objects.get(pk=offer_id)
+        order.status_id = 2
         cart = order.cart
 
-        orders = list(Order.objects.filter(cart=cart).exclude(pk=order.id))
-        for order in orders:
-            order.delete()
+        ##orders = list(Order.objects.filter(cart=cart).exclude(pk=order.id))
+        #for order in orders:
+        #    order.delete()
         cart.closed=True
         cart.save()
         order.save()
@@ -312,7 +313,7 @@ def get_details(pers_id):
 def get_closed_carts(client_id):
     carts = list(Cart.objects.filter(client=client_id, closed=True).values())
     for cart in carts:
-        orders_array = Order.objects.filter(cart=cart["id"]).values()
+        orders_array = Order.objects.filter(cart=cart["id"],status_id__gte=2).values()
         for order in orders_array:
             salon_id = order["salon_id"]
             order["salon"] = Salon.objects.filter(pk=salon_id).values().first()

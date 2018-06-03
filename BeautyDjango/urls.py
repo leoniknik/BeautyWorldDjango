@@ -19,4 +19,5 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^api/', include('BeautyWorld.urls')),
+    url(r'^crm/', include('BeautyWorld.crm_urls')),
 ]

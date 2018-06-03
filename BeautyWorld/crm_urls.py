@@ -20,4 +20,8 @@ urlpatterns = [
     url(r'^offer$', api_offers),  # GET
     url(r'^choose_offer$', api_choose_offer),# POST
     url(r'^create_order$', api_create_order),# POST
+
+
+    url(r'^login$', login),  # GET
+    url(r'^getfile$', getfile),  # GET
 ]
