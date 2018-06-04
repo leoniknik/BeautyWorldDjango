@@ -9,7 +9,7 @@ urlpatterns = [
     #url(r'^get_list_of_actual_crashes$', get_list_of_actual_crashes),  # GET
     #url(r'^get_list_of_history_crashes$', get_list_of_history_crashes),  # GET
     #url(r'^get_list_of_offers$', get_list_of_offers),  # GET
-    #url(r'^get_list_of_vehicles$', get_list_of_vehicles),  # GET
+    ##url(r'^get_list_of_vehicles$', get_list_of_vehicles),  # GET
 
     url(r'^category$', api_category),  # GET
     url(r'^salon$', api_salon),  # GET
