@@ -255,7 +255,20 @@ def api_orders(request):
     try:
         id = request.GET["id"]
         client = Client.objects.get(pk=id)
-        return JsonResponse({"code": 0, "data": get_closed_carts(client.id)})
+
+        orders_objs = list(Order.objects.filter(cart__client=client, cart__closed=True, status_id__gte=2))
+        orders = []
+
+        for order in orders_objs:
+            price = 0
+            services = order.services.all()
+            for service in services:
+                price+=service.price
+            ord = Order.objects.filter(pk=order.id).values("id","date","salon_id").first()
+            ord["status"] = order.status.status
+            ord["price"] = price
+            orders.append(ord)
+        return JsonResponse({"code": 0, "data": orders})
     except Exception as e:
         print(e)
         return JsonResponse({"code": 1, "data": {"code": 1, "message": str(e)}})
@@ -460,7 +473,7 @@ def getfile(request):
 
         create_file(1)
 
-        file_path = 'book.xlsx'
+        file_path = create_file(1)
         print(os.getcwd())
         fsock = open(file_path, "rb")
         # file = fsock.read()
