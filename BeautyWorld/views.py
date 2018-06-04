@@ -201,25 +201,31 @@ def api_create_order(request):
     try:
         client_id = 0
         salon_id = 0
-        services_ids = []
+        categories_ids = []
         type = request.content_type
         if type == "multipart/form-data":
             salon_id = request.POST["salon_id"]
             client_id = request.POST["client_id"]
-            services_ids = eval(request.POST["services"])
+            categories_ids = eval(request.POST["categories"])
         elif type == "application/json":
             body_json = json.loads(request.body)
             salon_id = body_json["salon_id"]
             client_id = body_json["client_id"]
-            services_ids = eval(body_json["services"])
+            categories_ids = eval(body_json["categories"])
         else:
             return JsonResponse({"code": 1, "data": {"code": 1, "message": "parse error"}})
+
+        services = []
+        salon = Salon.objects.get(pk=salon_id)
+        for cat_id in categories_ids:
+            services.append(Service.objects.get(salon=salon,category=cat_id))
+
         client = Client.objects.get(pk=client_id)
         new_cart = Cart(client=client)
         new_cart.closed = True
         new_cart.save()
 
-        services = Service.objects.filter(pk__in=services_ids)
+
         categories = []
         for service in services:
             categories.append(service.category)
