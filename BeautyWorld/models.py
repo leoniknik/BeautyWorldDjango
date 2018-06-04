@@ -9,7 +9,7 @@ class Credentials(models.Model):
     email = models.CharField(verbose_name='email', max_length=255, default="", null=True)
     password = models.CharField(verbose_name='password', max_length=255, default="")
     phone = models.CharField(verbose_name='phone', max_length=255, default="")
-    vk_id = models.CharField(verbose_name='image_url', max_length=1000, default="", null=True)
+    vk_id = models.CharField(verbose_name='vk_id', max_length=1000, default="", null=True)
 
 
 class PersonalDetails(models.Model):
@@ -23,7 +23,7 @@ class PersonalDetails(models.Model):
 class Master(models.Model):
     details = models.ForeignKey(PersonalDetails, null=False)
     description = models.CharField(verbose_name='description', max_length=1000, default="")
-    image_url = models.CharField(verbose_name='description', max_length=1000, default="")
+    image_url = models.CharField(verbose_name='image_url', max_length=1000, default="")
 
 
 class Salon(models.Model):
@@ -95,3 +95,4 @@ class Feedback(models.Model):
     comment = models.CharField(verbose_name="comment", max_length=1000, default="")
     client = models.ForeignKey(Client, null=False)
     order = models.ForeignKey(Order, null=False)
+
